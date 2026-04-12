@@ -1,103 +1,111 @@
-# 🚀 Scalable Real-Time Chat Application
+# 🚀 LetsConnectX – Real-Time Scalable Chat App
 
-A full-stack real-time chat application built with **WebSockets, JWT authentication, MongoDB, and Redis Pub/Sub**, designed to support **multi-room communication and distributed messaging across multiple server instances**.
-
----
-
-## 🔥 Features
-
-* ⚡ Real-time messaging using WebSockets
-* 🧑‍🤝‍🧑 Multi-room chat system
-* 🔐 JWT-based authentication (secure users)
-* 💾 Persistent chat history (MongoDB)
-* 🔄 Load previous messages on join
-* 🚀 Redis Pub/Sub for horizontal scaling
-* 🎨 Clean UI with chat bubbles & auto-scroll
+A **real-time chat application** built with **WebSockets, Redis Pub/Sub, and JWT authentication**, designed to scale across multiple servers.
 
 ---
 
-## 🧠 Tech Stack
+## 🌐 Live Demo
+
+* Frontend: https://letsconnectx.vercel.app
+* Backend (WS): https://letsconnectx.onrender.com
+* Auth Server: https://chat-app-auth-qr82.onrender.com
+
+---
+
+## ⚡ Features
+
+* 🔐 JWT-based Authentication
+* 💬 Real-time messaging using WebSockets
+* 🧠 Redis Pub/Sub for multi-server communication
+* 🗂️ Room-based chat system
+* 📜 Message history using MongoDB
+* 🌍 Deployed on Vercel + Render + Redis Cloud
+
+---
+
+## 🏗️ Tech Stack
 
 ### Frontend
 
-* React (TypeScript)
-* Tailwind CSS
+* React (Vite)
+* TypeScript
+* WebSocket API
 
 ### Backend
 
-* Node.js + Express
-* WebSocket (`ws`)
-
-### Database
-
-* MongoDB (Atlas)
-
-### Scaling
-
-* Redis (Pub/Sub)
+* Node.js
+* Express
+* WebSocket (ws)
+* Redis (ioredis)
+* MongoDB (Mongoose)
 
 ### Deployment
 
-* Vercel (Frontend)
-* Render (Backend)
+* Frontend → Vercel
+* Backend → Render
+* Redis → Redis Cloud
 
 ---
 
-## ⚙️ Architecture
+## 🧠 System Design
 
 ```
-Frontend (Vercel)
-        ↓
-WebSocket (WSS)
-        ↓
-Backend (Render)
-        ↓
-Redis Pub/Sub
-        ↓
-Multiple Server Instances
-        ↓
-MongoDB
+User → Frontend (React)
+      → Auth Server (JWT)
+      → WebSocket Server
+      → Redis Pub/Sub
+      → MongoDB (store messages)
 ```
+
+👉 Supports multiple backend instances using Redis.
 
 ---
 
-## 🚀 Live Demo
+## 🔑 Environment Variables
 
-👉 https://your-frontend-url.vercel.app
-
----
-
-## 🛠️ Local Setup
-
-### 1. Clone Repository
+### Backend (Render)
 
 ```
-git clone https://github.com/your-username/chat-app.git
-cd chat-app
+MONGO_URI=your_mongodb_url
+REDIS_URL=your_redis_url
+JWT_SECRET=your_secret
+PORT=10000
 ```
 
 ---
 
-### 2. Backend Setup
+### Frontend (Vercel)
+
+```
+VITE_AUTH_URL=https://chat-app-auth-xxxx.onrender.com
+VITE_WS_URL=wss://letsconnectx.onrender.com
+```
+
+---
+
+## 🛠️ Installation (Local Setup)
+
+### 1. Clone repo
+
+```
+git clone https://github.com/your-username/letsconnectx.git
+cd letsconnectx
+```
+
+---
+
+### 2. Setup Backend
 
 ```
 cd backend
 npm install
+npm run build
 npm run dev
-```
-
-Create `.env` file:
-
-```
-PORT=8080
-MONGO_URI=your_mongodb_url
-JWT_SECRET=your_secret
-REDIS_URL=your_redis_url
 ```
 
 ---
 
-### 3. Frontend Setup
+### 3. Setup Frontend
 
 ```
 cd frontend
@@ -105,75 +113,48 @@ npm install
 npm run dev
 ```
 
-Create `.env` file:
+---
 
-```
-VITE_WS_URL=ws://localhost:8080
-```
+## 🧪 How It Works
+
+1. User logs in → receives JWT token
+2. Token stored in browser
+3. WebSocket connects using token
+4. User joins a room
+5. Messages:
+
+   * Saved to MongoDB
+   * Published via Redis
+   * Broadcast to all users in room
 
 ---
 
-## 🔑 Environment Variables
+## 📸 Screenshots
 
-### Backend
+<img width="1910" height="1019" alt="image" src="https://github.com/user-attachments/assets/29a1983b-b6db-41c9-9f57-0c3e5930f0a9" />
+<img width="1893" height="1005" alt="image" src="https://github.com/user-attachments/assets/0e8327ed-7ec6-47df-8d38-326e0f49ba96" />
 
-| Variable   | Description               |
-| ---------- | ------------------------- |
-| MONGO_URI  | MongoDB connection string |
-| JWT_SECRET | Secret key for JWT        |
-| REDIS_URL  | Redis connection URL      |
-
----
-
-### Frontend
-
-| Variable    | Description           |
-| ----------- | --------------------- |
-| VITE_WS_URL | WebSocket backend URL |
-
----
-
-## 🧪 Testing (Scaling)
-
-Run multiple backend instances:
-
-```
-$env:PORT=8080; node dist/index.js
-$env:PORT=8081; node dist/index.js
-```
-
-Open:
-
-```
-http://localhost:5173?port=8080&roomId=test
-http://localhost:5173?port=8081&roomId=test
-```
-
-Messages will sync across servers via Redis.
-
----
-
-## 💼 Resume Highlight
-
-Developed a scalable real-time chat application using WebSockets, JWT authentication, MongoDB, and Redis Pub/Sub, supporting distributed messaging across multiple server instances.
 
 ---
 
 ## 🚀 Future Improvements
 
-* Online users / presence system
 * Typing indicators
-* Message notifications
-* File sharing support
+* Online/offline status
+* File sharing
+* Message reactions
+* Group chats
 
 ---
 
-## 🙌 Acknowledgements
+## 👩‍💻 Author
 
-Built as part of advanced full-stack and system design learning.
+Diya Gupta
 
 ---
 
-## 📬 Contact
+## ⭐ If you like this project
 
-Feel free to connect or reach out for collaboration!
+Give it a star ⭐ and share it!
+
+---
