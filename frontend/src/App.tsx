@@ -26,7 +26,7 @@ function App() {
     });
 
     const data = await res.json();
-
+    console.log("LOGIN RESPONSE:", data);
     localStorage.setItem("token", data.token);
 
     setJoined(true);
