@@ -17,17 +17,24 @@ app.use(express.json());
 
 
 app.post("/login", (req: Request, res: Response) => {
-  const { username } = req.body;
+  try {
+    const { username } = req.body;
 
-  if (!username) {
-    return res.status(400).json({ error: "Username required" });
+    if (!username) {
+      return res.status(400).json({ error: "Username required" });
+    }
+
+    const token = login(username);
+
+    res.json({ token });
+  } catch (err) {
+    console.error("Login error:", err);
+    res.status(500).json({ error: "Internal server error" });
   }
-
-  const token = login(username);
-
-  res.json({ token });
 });
 
-app.listen(3000, () => {
-  console.log("Auth server running on 3000");
+const PORT = process.env.PORT || 3000;
+
+app.listen(PORT, () => {
+  console.log(`Auth server running on port ${PORT}`);
 });
