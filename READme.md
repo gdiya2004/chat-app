@@ -88,8 +88,7 @@ VITE_WS_URL=wss://letsconnectx.onrender.com
 ### 1. Clone repo
 
 ```
-git clone https://github.com/your-username/letsconnectx.git
-cd letsconnectx
+git clone https://github.com/gdiya2004/chat-app
 ```
 
 ---
