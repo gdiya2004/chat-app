@@ -1,25 +1,31 @@
-import RedisPkg from "ioredis";
+import dotenv from "dotenv";
+dotenv.config();
 
+import http from "http";
+import { WebSocketServer, WebSocket } from "ws";
+import RedisPkg from "ioredis";
 const Redis = RedisPkg.default;
+
+import { Message } from "./models/Message.js";
+import { verifyToken } from "./auth.js";
+import { connectDB } from "./db.js";
+
+connectDB();
 
 const pub = new Redis(process.env.REDIS_URL!);
 const sub = new Redis(process.env.REDIS_URL!);
 
-
-import dotenv from "dotenv";
-dotenv.config();
-
-import { WebSocketServer, WebSocket } from "ws";
-
-import { Message } from "./models/Message.js";
-import { verifyToken } from "./auth.js";
-
-import { connectDB } from "./db.js";
-connectDB();
-
-
 const PORT = process.env.PORT || 8080;
-const wss = new WebSocketServer({ port: Number(PORT) });
+
+const server = http.createServer();
+const wss = new WebSocketServer({ server });
+
+server.listen(PORT, () => {
+  console.log("Server running on", PORT);
+});
+
+
+
 const rooms = new Map<string, Set<WebSocket>>();
 
 sub.subscribe("chat");

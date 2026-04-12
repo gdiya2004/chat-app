@@ -12,9 +12,9 @@ export const login = (username: string) => {
   });
 };
 
-export const verifyToken = (token: string) => {
+export const verifyToken = (token: string): { username: string } | null => {
   try {
-    return jwt.verify(token, SECRET);
+    return jwt.verify(token, SECRET) as { username: string };
   } catch {
     return null;
   }
