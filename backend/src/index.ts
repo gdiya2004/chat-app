@@ -2,8 +2,8 @@ import RedisPkg from "ioredis";
 
 const Redis = RedisPkg.default;
 
-const pub = new Redis();
-const sub = new Redis();
+const pub = new Redis(process.env.REDIS_URL);
+const sub = new Redis(process.env.REDIS_URL);
 
 import dotenv from "dotenv";
 dotenv.config();
