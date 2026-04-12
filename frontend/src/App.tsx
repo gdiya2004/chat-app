@@ -17,7 +17,7 @@ function App() {
   const handleLogin = async () => {
     if (!username) return;
 
-    const res = await fetch("http://localhost:3000/login", {
+    const res = await fetch(`${import.meta.env.VITE_AUTH_URL}/login`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
