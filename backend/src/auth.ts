@@ -1,18 +1,20 @@
 import jwt from "jsonwebtoken";
 
-const SECRET = process.env.JWT_SECRET!;
+const SECRET = process.env.JWT_SECRET;
+
+if (!SECRET) {
+  throw new Error("JWT_SECRET missing ❌");
+}
 
 export const login = (username: string) => {
-  const token = jwt.sign({ username }, SECRET, {
+  return jwt.sign({ username }, SECRET, {
     expiresIn: "1d",
   });
-
-  return token;
 };
 
 export const verifyToken = (token: string) => {
   try {
-    return jwt.verify(token, SECRET) as { username: string };
+    return jwt.verify(token, SECRET);
   } catch {
     return null;
   }
