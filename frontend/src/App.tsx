@@ -7,6 +7,24 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [input, setInput] = useState("");
   const [username, setUsername] = useState("");
+  const [roomId, setRoomId] = useState(() => {
+    // Parse room ID from search params (?roomId=xxx) or pathname (/roomId=xxx or /room/xxx)
+    const searchParams = new URLSearchParams(window.location.search);
+    const fromSearch = searchParams.get("roomId");
+    if (fromSearch) return fromSearch;
+
+    const path = window.location.pathname.replace(/^\/+/, "");
+    if (path.startsWith("roomId=")) {
+      return path.split("=")[1] || "test";
+    }
+    if (path.startsWith("room/")) {
+      return path.split("/")[1] || "test";
+    }
+    if (path.length > 0 && path !== "index.html") {
+      return path;
+    }
+    return "test";
+  });
   const [joined, setJoined] = useState(false);
   const [loginError, setLoginError] = useState("");
   const [isLoggingIn, setIsLoggingIn] = useState(false);
@@ -90,7 +108,6 @@ function App() {
     setLoading(true);
 
     const params = new URLSearchParams(window.location.search);
-    const roomId = params.get("roomId") || "test";
     const customPort = params.get("port");
 
     const defaultWsUrl = import.meta.env.VITE_WS_URL || "ws://localhost:8080";
@@ -124,7 +141,7 @@ function App() {
         JSON.stringify({
           type: "join",
           payload: {
-            roomId,
+            roomId: roomId.trim() || "test",
             token,
           },
         })
@@ -145,7 +162,7 @@ function App() {
     return () => {
       ws.close();
     };
-  }, [joined]);
+  }, [joined, roomId]);
 
   // ✅ JOIN SCREEN
   if (!joined) {
@@ -154,10 +171,10 @@ function App() {
         <div className="bg-gray-900 border border-gray-800 p-8 rounded-2xl flex flex-col gap-5 w-full max-w-sm shadow-2xl">
           <div className="text-center">
             <h1 className="text-2xl font-bold text-white tracking-tight">
-              Real-Time Chat
+              LetsConnectX Chat
             </h1>
             <p className="text-sm text-gray-400 mt-1">
-              Enter your username to join
+              Join a real-time chat room
             </p>
           </div>
 
@@ -168,13 +185,26 @@ function App() {
             }}
             className="flex flex-col gap-4"
           >
-            <input
-              placeholder="Enter your name"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              className="p-3 bg-gray-800 border border-gray-700 text-white placeholder-gray-500 rounded-xl outline-none focus:border-purple-500 transition"
-              autoFocus
-            />
+            <div>
+              <label className="text-xs text-gray-400 mb-1.5 block">Your Name</label>
+              <input
+                placeholder="Enter your name"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                className="w-full p-3 bg-gray-800 border border-gray-700 text-white placeholder-gray-500 rounded-xl outline-none focus:border-purple-500 transition text-sm"
+                autoFocus
+              />
+            </div>
+
+            <div>
+              <label className="text-xs text-gray-400 mb-1.5 block">Room ID</label>
+              <input
+                placeholder="e.g. general, red, test"
+                value={roomId}
+                onChange={(e) => setRoomId(e.target.value)}
+                className="w-full p-3 bg-gray-800 border border-gray-700 text-white placeholder-gray-500 rounded-xl outline-none focus:border-purple-500 transition text-sm"
+              />
+            </div>
 
             {loginError && (
               <div className="text-red-400 text-xs text-center bg-red-950/50 border border-red-800 p-2 rounded-lg">
@@ -185,7 +215,7 @@ function App() {
             <button
               type="submit"
               disabled={isLoggingIn || !username.trim()}
-              className="bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white font-medium p-3 rounded-xl transition duration-200 shadow-lg shadow-purple-600/30"
+              className="bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white font-medium p-3 rounded-xl transition duration-200 shadow-lg shadow-purple-600/30 text-sm mt-2"
             >
               {isLoggingIn ? "Connecting..." : "Join Chat"}
             </button>
@@ -200,7 +230,7 @@ function App() {
     return (
       <div className="h-screen flex flex-col items-center justify-center bg-gray-950 text-white gap-3">
         <div className="w-8 h-8 border-4 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
-        <p className="text-sm text-gray-400">Loading chat room...</p>
+        <p className="text-sm text-gray-400">Joining room #{roomId}...</p>
       </div>
     );
   }
@@ -213,9 +243,14 @@ function App() {
         <div className="flex items-center gap-3">
           <div className="w-3 h-3 bg-emerald-500 rounded-full animate-pulse"></div>
           <div>
-            <h2 className="text-white font-semibold text-sm">Active Room</h2>
-            <p className="text-xs text-gray-400">
-              Logged in as <span className="text-purple-400 font-medium">{username}</span>
+            <h2 className="text-white font-semibold text-sm flex items-center gap-2">
+              <span>Room:</span>
+              <span className="text-purple-400 bg-purple-950/50 px-2 py-0.5 rounded-md border border-purple-800/50">
+                #{roomId}
+              </span>
+            </h2>
+            <p className="text-xs text-gray-400 mt-0.5">
+              Logged in as <span className="text-gray-200 font-medium">{username}</span>
             </p>
           </div>
         </div>
@@ -234,8 +269,9 @@ function App() {
       {/* Chat messages */}
       <div className="flex-1 overflow-y-auto p-6 space-y-4">
         {mssges.length === 0 ? (
-          <div className="h-full flex items-center justify-center text-gray-500 text-sm">
-            No messages yet. Send a message to start chatting!
+          <div className="h-full flex flex-col items-center justify-center text-gray-500 text-sm gap-1">
+            <p>No messages in room #{roomId} yet.</p>
+            <p className="text-xs text-gray-600">Send a message to start chatting!</p>
           </div>
         ) : (
           mssges.map((m, index) => {
@@ -278,7 +314,7 @@ function App() {
           <input
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Type a message..."
+            placeholder={`Message #${roomId}...`}
             className="flex-1 bg-gray-800 border border-gray-700 text-white placeholder-gray-500 px-4 py-3 rounded-xl outline-none focus:border-purple-500 transition text-sm"
           />
 

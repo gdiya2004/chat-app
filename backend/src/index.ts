@@ -2,58 +2,14 @@ import dotenv from "dotenv";
 dotenv.config();
 
 import http from "http";
-import express from "express";
-import cors from "cors";
 import { WebSocketServer, WebSocket } from "ws";
 import { Redis } from "ioredis";
 
 import { Message } from "./models/Message.js";
-import { login, verifyToken } from "./auth.js";
+import { verifyToken } from "./auth.js";
 import { connectDB, isDBConnected } from "./db.js";
 
 connectDB();
-
-// Express HTTP Application
-const app = express();
-app.use(
-  cors({
-    origin: (origin, callback) => {
-      // Allow any origin for flexible cloud and local deployment
-      callback(null, true);
-    },
-    credentials: true,
-  })
-);
-app.use(express.json());
-
-// Health check endpoint
-app.get("/", (_req, res) => {
-  res.json({
-    status: "online",
-    message: "Chat Application Backend & WebSocket Server",
-    database: isDBConnected() ? "connected" : "in-memory-fallback",
-    redis: isRedisConnected ? "connected" : "single-server-fallback",
-  });
-});
-
-app.get("/health", (_req, res) => {
-  res.json({ status: "healthy" });
-});
-
-// Authentication endpoint
-app.post("/login", (req, res) => {
-  try {
-    const { username } = req.body;
-    if (!username) {
-      return res.status(400).json({ error: "Username required" });
-    }
-    const token = login(username);
-    res.json({ token });
-  } catch (err) {
-    console.error("Login error:", err);
-    res.status(500).json({ error: "Internal server error" });
-  }
-});
 
 let pub: Redis | null = null;
 let sub: Redis | null = null;
@@ -91,9 +47,9 @@ if (process.env.REDIS_URL) {
     pub.connect().catch(() => {
       isRedisConnected = false;
     });
-    sub.connect().catch(() => {});
+    sub.connect().catch(() => { });
 
-    sub.subscribe("chat").catch(() => {});
+    sub.subscribe("chat").catch(() => { });
 
     sub.on("message", (channel: string, message: string) => {
       if (channel !== "chat") return;
@@ -113,12 +69,11 @@ if (process.env.REDIS_URL) {
 
 const PORT = Number(process.env.PORT) || 8080;
 
-// Create unified HTTP + WebSocket Server
-const server = http.createServer(app);
+const server = http.createServer();
 const wss = new WebSocketServer({ server });
 
 server.listen(PORT, () => {
-  console.log(`🚀 Unified HTTP & WebSocket server running on port ${PORT}`);
+  console.log(`⚡ WebSocket server running on port ${PORT}`);
 });
 
 const rooms = new Map<string, Set<WebSocket>>();
