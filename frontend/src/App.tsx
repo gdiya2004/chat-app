@@ -63,6 +63,22 @@ function App() {
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
   const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
   const peerConnectionRef = useRef<RTCPeerConnection | null>(null);
+  const iceCandidatesQueueRef = useRef<RTCIceCandidateInit[]>([]);
+
+
+  const flushIceCandidates = async (pc: RTCPeerConnection) => {
+    while (iceCandidatesQueueRef.current.length > 0) {
+      const candidate = iceCandidatesQueueRef.current.shift();
+      if (candidate) {
+        try {
+          await pc.addIceCandidate(new RTCIceCandidate(candidate));
+        } catch (e) {
+          console.warn("Error adding queued ICE candidate:", e);
+        }
+      }
+    }
+  };
+
 
   const wsRef = useRef<WebSocket | null>(null);
   const bottomRef = useRef<HTMLDivElement | null>(null);
@@ -247,6 +263,7 @@ function App() {
       status: "calling",
     });
 
+    await initLocalMedia();
     const token = localStorage.getItem("token");
 
     // Send call request to target user
@@ -290,7 +307,6 @@ function App() {
     endCall();
   };
 
-
   const endCall = () => {
     const token = localStorage.getItem("token");
     const target = callState.isIncoming ? callState.caller : callState.targetUser;
@@ -305,9 +321,13 @@ function App() {
     }
 
     if (peerConnectionRef.current) {
-      peerConnectionRef.current.close();
+      try {
+        peerConnectionRef.current.close();
+      } catch {}
       peerConnectionRef.current = null;
     }
+
+    iceCandidatesQueueRef.current = [];
 
     if (localStream) {
       localStream.getTracks().forEach((t) => t.stop());
@@ -323,6 +343,7 @@ function App() {
       status: "idle",
     });
   };
+
 
   // ==========================================
   // 3. SEND MESSAGE & FILE ATTACHMENTS
@@ -602,43 +623,59 @@ function App() {
           endCall();
         }
 
-        // WebRTC: Handle Remote Offer
+        // WebRTC: Handle Remote Offer (Callee receives offer from caller)
         if (type === "webrtc_offer") {
-          const pc = peerConnectionRef.current || createPeerConnection(payload.caller);
-          await pc.setRemoteDescription(new RTCSessionDescription(payload.offer));
-          const answer = await pc.createAnswer();
-          await pc.setLocalDescription(answer);
+          try {
+            const pc = peerConnectionRef.current || createPeerConnection(payload.caller);
+            await pc.setRemoteDescription(new RTCSessionDescription(payload.offer));
+            await flushIceCandidates(pc);
 
-          const token = localStorage.getItem("token");
-          ws.send(
-            JSON.stringify({
-              type: "webrtc_answer",
-              payload: { targetUser: payload.caller, answer, roomId, token },
-            })
-          );
+            const answer = await pc.createAnswer();
+            await pc.setLocalDescription(answer);
+
+            const token = localStorage.getItem("token");
+            ws.send(
+              JSON.stringify({
+                type: "webrtc_answer",
+                payload: { targetUser: payload.caller, answer, roomId, token },
+              })
+            );
+          } catch (err) {
+            console.error("Error processing WebRTC offer:", err);
+          }
         }
 
-        // WebRTC: Handle Remote Answer
+        // WebRTC: Handle Remote Answer (Caller receives answer from callee)
         if (type === "webrtc_answer") {
-          if (peerConnectionRef.current) {
-            await peerConnectionRef.current.setRemoteDescription(
-              new RTCSessionDescription(payload.answer)
-            );
+          try {
+            if (peerConnectionRef.current) {
+              await peerConnectionRef.current.setRemoteDescription(
+                new RTCSessionDescription(payload.answer)
+              );
+              await flushIceCandidates(peerConnectionRef.current);
+            }
+          } catch (err) {
+            console.error("Error processing WebRTC answer:", err);
           }
         }
 
         // WebRTC: Handle ICE Candidate
         if (type === "webrtc_ice_candidate") {
-          if (peerConnectionRef.current && payload.candidate) {
-            try {
-              await peerConnectionRef.current.addIceCandidate(
-                new RTCIceCandidate(payload.candidate)
-              );
-            } catch (iceErr) {
-              console.warn("ICE candidate error:", iceErr);
+          if (payload.candidate) {
+            const pc = peerConnectionRef.current;
+            if (pc && pc.remoteDescription && pc.remoteDescription.type) {
+              try {
+                await pc.addIceCandidate(new RTCIceCandidate(payload.candidate));
+              } catch (iceErr) {
+                console.warn("ICE candidate error:", iceErr);
+              }
+            } else {
+              // Queue candidate until setRemoteDescription completes
+              iceCandidatesQueueRef.current.push(payload.candidate);
             }
           }
         }
+
       } catch (err) {
         console.error("Error processing incoming WebSocket payload:", err);
       }

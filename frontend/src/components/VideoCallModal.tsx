@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useState } from "react";
 import { Phone, PhoneOff, Mic, MicOff, Video, VideoOff, Volume2 } from "lucide-react";
 
 export interface CallState {
@@ -26,28 +26,8 @@ export const VideoCallModal: React.FC<VideoCallModalProps> = ({
   onDeclineCall,
   onEndCall,
 }) => {
-  const localVideoRef = useRef<HTMLVideoElement | null>(null);
-  const remoteVideoRef = useRef<HTMLVideoElement | null>(null);
-
   const [isMuted, setIsMuted] = useState(false);
   const [isVideoOff, setIsVideoOff] = useState(false);
-
-  // Bind local stream
-  useEffect(() => {
-    if (localVideoRef.current && localStream) {
-      localVideoRef.current.srcObject = localStream;
-      localVideoRef.current.play().catch(() => {});
-    }
-  }, [localStream, callState.status]);
-
-  // Bind remote stream
-  useEffect(() => {
-    if (remoteVideoRef.current && remoteStream) {
-      remoteVideoRef.current.srcObject = remoteStream;
-      remoteVideoRef.current.play().catch(() => {});
-    }
-  }, [remoteStream, callState.status]);
-
 
   // Toggle Mic
   const toggleMute = () => {
@@ -157,15 +137,21 @@ export const VideoCallModal: React.FC<VideoCallModalProps> = ({
 
       {/* Video Viewports Container */}
       <div className="relative w-full max-w-4xl flex-1 bg-gray-900 rounded-3xl overflow-hidden border border-gray-800 my-4 flex items-center justify-center shadow-2xl">
-        {/* Remote Video (Main) */}
-        {remoteStream ? (
-          <video
-            ref={remoteVideoRef}
-            autoPlay
-            playsInline
-            className="w-full h-full object-cover"
-          />
-        ) : (
+        {/* Remote Video element - ALWAYS MOUNTED to receive stream instantly */}
+        <video
+          ref={(el) => {
+            if (el && remoteStream && el.srcObject !== remoteStream) {
+              el.srcObject = remoteStream;
+              el.play().catch(() => {});
+            }
+          }}
+          autoPlay
+          playsInline
+          className={`w-full h-full object-cover ${remoteStream ? "block" : "hidden"}`}
+        />
+
+        {/* Placeholder if remote stream is connecting */}
+        {!remoteStream && (
           <div className="flex flex-col items-center gap-3 text-gray-400">
             <div className="w-24 h-24 rounded-full bg-gray-800 flex items-center justify-center text-3xl font-bold text-purple-400 border border-gray-700">
               {(callState.isIncoming ? callState.caller : callState.targetUser)
@@ -180,7 +166,12 @@ export const VideoCallModal: React.FC<VideoCallModalProps> = ({
         <div className="absolute bottom-4 right-4 w-32 sm:w-48 aspect-video bg-gray-950 rounded-2xl overflow-hidden border-2 border-purple-500/50 shadow-xl">
           {localStream && !isVideoOff ? (
             <video
-              ref={localVideoRef}
+              ref={(el) => {
+                if (el && localStream && el.srcObject !== localStream) {
+                  el.srcObject = localStream;
+                  el.play().catch(() => {});
+                }
+              }}
               autoPlay
               playsInline
               muted
