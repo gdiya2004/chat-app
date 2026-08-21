@@ -474,6 +474,7 @@ wss.on("connection", (socket: ExtendedWebSocket) => {
         type === "webrtc_call_request" ||
         type === "webrtc_call_accepted" ||
         type === "webrtc_call_declined" ||
+        type === "webrtc_call_busy" ||
         type === "webrtc_offer" ||
         type === "webrtc_answer" ||
         type === "webrtc_ice_candidate" ||

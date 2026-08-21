@@ -60,10 +60,16 @@ function App() {
     targetUser: "",
     status: "idle",
   });
+  const callStateRef = useRef<CallState>(callState);
+  useEffect(() => {
+    callStateRef.current = callState;
+  }, [callState]);
+
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
   const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
   const peerConnectionRef = useRef<RTCPeerConnection | null>(null);
   const iceCandidatesQueueRef = useRef<RTCIceCandidateInit[]>([]);
+
 
 
   const flushIceCandidates = async (pc: RTCPeerConnection) => {
@@ -579,6 +585,18 @@ function App() {
 
         // WebRTC: Incoming Call Request
         if (type === "webrtc_call_request") {
+          // If already in a call, busy with another call, or ringing, reject gracefully
+          if (callStateRef.current.status !== "idle") {
+            const token = localStorage.getItem("token");
+            ws.send(
+              JSON.stringify({
+                type: "webrtc_call_busy",
+                payload: { targetUser: payload.caller, roomId, token },
+              })
+            );
+            return;
+          }
+
           setCallState({
             isActive: true,
             isIncoming: true,
@@ -611,6 +629,11 @@ function App() {
           }
         }
 
+        // WebRTC: Call Busy
+        if (type === "webrtc_call_busy") {
+          alert(`${payload.caller || "User"} is currently on another call.`);
+          endCall();
+        }
 
         // WebRTC: Call Declined
         if (type === "webrtc_call_declined") {
@@ -622,6 +645,7 @@ function App() {
         if (type === "webrtc_call_ended") {
           endCall();
         }
+
 
         // WebRTC: Handle Remote Offer (Callee receives offer from caller)
         if (type === "webrtc_offer") {
